@@ -1,6 +1,6 @@
 'use client'
 
-import { useEffect, useRef } from 'react'
+import { useEffect, useRef, useState } from 'react'
 
 interface Props {
   source: string
@@ -9,12 +9,54 @@ interface Props {
 
 export default function CodeViewer({ source, highlightLine }: Props) {
   const lineRef = useRef<HTMLTableRowElement>(null)
+  const hljsRef = useRef<any>(null)
+  const [hlReady, setHlReady] = useState(false)
 
   useEffect(() => {
     lineRef.current?.scrollIntoView({ block: 'center', behavior: 'smooth' })
   }, [highlightLine])
 
+  // Load highlight.js (CDN) and stylesheet once
+  useEffect(() => {
+    if ((window as any).hljs) {
+      hljsRef.current = (window as any).hljs
+      setHlReady(true)
+      return
+    }
+
+    const link = document.createElement('link')
+    link.rel = 'stylesheet'
+    link.href = 'https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.8.0/styles/github-dark.min.css'
+    document.head.appendChild(link)
+
+    const script = document.createElement('script')
+    script.src = 'https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.8.0/highlight.min.js'
+    script.async = true
+    script.onload = () => {
+      hljsRef.current = (window as any).hljs
+      setHlReady(true)
+    }
+    document.body.appendChild(script)
+
+    return () => {
+      document.head.removeChild(link)
+      document.body.removeChild(script)
+    }
+  }, [])
+
   const lines = source.split('\n')
+
+  function getHighlightedLine(line: string) {
+    if (!hlReady || !hljsRef.current) return line
+    try {
+      const detected = hljsRef.current.highlightAuto(source)
+      const lang = detected.language
+      if (lang) return hljsRef.current.highlight(line, { language: lang }).value
+      return hljsRef.current.highlightAuto(line).value
+    } catch (e) {
+      return line
+    }
+  }
 
   return (
     <div className="mt-3 max-h-72 overflow-auto rounded-lg border border-[#2a2d3a] bg-[#0d0f17] text-xs">
@@ -40,7 +82,12 @@ export default function CodeViewer({ source, highlightLine }: Props) {
                     isHighlight ? 'text-amber-200' : 'text-slate-300'
                   }`}
                 >
-                  {line || ' '}
+                  {hlReady ? (
+                    // eslint-disable-next-line react/no-danger
+                    <code className="hljs" dangerouslySetInnerHTML={{ __html: getHighlightedLine(line) || ' ' }} />
+                  ) : (
+                    line || ' '
+                  )}
                 </td>
               </tr>
             )

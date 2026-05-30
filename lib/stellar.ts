@@ -189,3 +189,57 @@ export async function fetchContractsByAccount(
     return []
   }
 }
+
+/**
+ * Fetch contract metadata including WASM hash, creation date, and creator.
+ * Note: Creator is not available via current APIs and will return null.
+ * Creation date is derived from the contract's creation ledger via Soroban RPC and Horizon.
+ */
+export async function fetchContractMetadata(
+  contractId: string,
+  network: StellarNetwork,
+): Promise<{ wasmHash: string; createdAt: string | null; creator: string | null }> {
+  if (!isValidContractId(contractId)) {
+    return { wasmHash: '', createdAt: null, creator: null }
+  }
+
+  let wasmHash: string | null = null
+  let creationLedger: number | null = null
+
+  try {
+    const result = await rpcCall<{
+      contract_id: string
+      wasm_hash: string
+      creation_ledger: number
+    }>(
+      network.sorobanRpcUrl,
+      'getContractInfo',
+      { contract_id: contractId }
+    )
+    wasmHash = result.wasm_hash
+    creationLedger = result.creation_ledger
+  } catch (e) {
+    // If we fail to get the contract info via Soroban RPC, return empty
+    return { wasmHash: '', createdAt: null, creator: null }
+  }
+
+  let createdAt: string | null = null
+  if (creationLedger !== null) {
+    try {
+      const ledgerUrl = `${network.horizonUrl}/ledgers/${creationLedger}`
+      const ledgerRes = await fetch(ledgerUrl)
+      if (ledgerRes.ok) {
+        const ledgerData = await ledgerRes.json()
+        createdAt = ledgerData.closed_at // ISO 8601 string
+      }
+    } catch (e) {
+      // Leave createdAt as null if we fail to fetch ledger details
+    }
+  }
+
+  return {
+    wasmHash: wasmHash ?? '',
+    createdAt,
+    creator: null, // Creator information is not available via current APIs
+  }
+}

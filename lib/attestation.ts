@@ -109,7 +109,7 @@ export async function attestScan(
  * This uses the @stellar/stellar-base library if available, otherwise throws.
  * In production this would be bundled; here we use a dynamic import pattern.
  */
-function buildPaymentXdr(
+export function buildPaymentXdr(
   publicKey: string,
   sequence: bigint,
   memoHashBytes: Uint8Array,
@@ -209,7 +209,7 @@ function buildPaymentXdr(
  * Decode a Stellar StrKey (G-address) to raw 32-byte public key.
  * Stellar StrKey uses base32 with a version byte and CRC16 checksum.
  */
-function strKeyDecode(address: string): Uint8Array {
+export function strKeyDecode(address: string): Uint8Array {
   const ALPHABET = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ234567'
   const decoded: number[] = []
   let bits = 0

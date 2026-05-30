@@ -7,7 +7,9 @@
     "build": "next build",
     "start": "next start",
     "lint": "next lint",
-    "test:e2e": "playwright test"
+    "test:e2e": "playwright test",
+    "test:unit": "vitest run lib/",
+    "test:unit:watch": "vitest lib/"
   },
   "dependencies": {
     "next": "14.2.35",

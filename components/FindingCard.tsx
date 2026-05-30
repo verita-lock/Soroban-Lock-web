@@ -17,6 +17,7 @@ export default function FindingCard({ finding, onMuteChange }: Props) {
   const [showCode, setShowCode] = useState(false)
   const [source, setSource] = useState<string | null>(null)
   const [muted, setMuted] = useState(false)
+  const [copied, setCopied] = useState(false)
 
   useEffect(() => {
     setSource(loadSourceCode())
@@ -34,16 +35,63 @@ export default function FindingCard({ finding, onMuteChange }: Props) {
     onMuteChange?.()
   }
 
+  function handleCopy() {
+    const text = [
+      `[${finding.severity.toUpperCase()}] Check: ${finding.check_name}`,
+      `File: ${finding.file_path}`,
+      `Line: ${finding.line}`,
+      `Function: ${finding.function_name}`,
+      '',
+      'Description:',
+      finding.description,
+      finding.remediation ? `\nRemediation:\n${finding.remediation}` : '',
+    ]
+      .filter(Boolean)
+      .join('\n')
+
+    navigator.clipboard.writeText(text).then(() => {
+      setCopied(true)
+      setTimeout(() => setCopied(false), 1500)
+    }).catch(err => {
+      console.error('Failed to copy text: ', err)
+    })
+  }
+
   return (
     <div className={`slide-down rounded-lg border border-[#2a2d3a] bg-[#12151f] p-5 ${muted ? 'opacity-50' : ''}`}>
-      <div className="mb-4 flex flex-wrap items-center gap-3">
-        <SeverityBadge severity={finding.severity} />
-        <CheckTooltip checkName={finding.check_name} />
-        {muted && (
-          <span className="rounded-full bg-slate-500/10 px-2.5 py-0.5 text-xs font-semibold text-slate-400">
-            Muted
-          </span>
-        )}
+      <div className="mb-4 flex items-start justify-between gap-4">
+        <div className="flex flex-wrap items-center gap-3">
+          <SeverityBadge severity={finding.severity} />
+          <CheckTooltip checkName={finding.check_name} />
+          {muted && (
+            <span className="rounded-full bg-slate-500/10 px-2.5 py-0.5 text-xs font-semibold text-slate-400">
+              Muted
+            </span>
+          )}
+        </div>
+        <button
+          onClick={handleCopy}
+          className={`flex items-center gap-1 rounded-md border border-[#2a2d3a] bg-[#1a1d27] px-2.5 py-1 text-xs font-medium transition-all duration-200 hover:border-slate-500 ${
+            copied ? 'text-green-400 border-green-500/30 bg-green-500/5' : 'text-slate-400 hover:text-slate-200'
+          }`}
+          title="Copy finding as formatted text"
+        >
+          {copied ? (
+            <>
+              <svg className="h-3.5 w-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
+              </svg>
+              <span>Copied!</span>
+            </>
+          ) : (
+            <>
+              <svg className="h-3.5 w-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                <path strokeLinecap="round" strokeLinejoin="round" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2" />
+              </svg>
+              <span>Copy</span>
+            </>
+          )}
+        </button>
       </div>
 
       <p className="mb-5 text-sm leading-relaxed text-slate-300">

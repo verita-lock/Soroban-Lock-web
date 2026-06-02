@@ -4,6 +4,9 @@ import { WalletProvider } from '@/lib/WalletContext'
 import { ToastProvider } from '@/lib/toast'
 import ToastContainer from '@/components/ToastContainer'
 import ErrorBoundary from '@/components/ErrorBoundary'
+import { validateEnv } from '@/lib/env'
+
+validateEnv()
 
 export const metadata: Metadata = {
   title: 'Soroban Guard — Smart Contract Security Scanner',

@@ -19,15 +19,15 @@ import FindingsWordCloud from '@/components/FindingsWordCloud'
 import EmptyState from '@/components/EmptyState'
 import SeverityBadge from '@/components/SeverityBadge'
 import SeverityDonut from '@/components/SeverityDonut'
-import FindingsSkeleton from '@/components/FindingsSkeleton'
 import ThemeToggle from '@/components/ThemeToggle'
 import { generatePdfReport } from '@/lib/pdfReport'
 import { calculateScore } from '@/lib/score'
-import { useToast } from '@/lib/toast'
-import { useWallet } from '@/lib/WalletContext'
 import GithubExportModal from '@/components/GithubExportModal'
 import JiraExportModal from '@/components/JiraExportModal'
 import NotionExportModal from '@/components/NotionExportModal'
+import TelegramNotifyModal from '@/components/TelegramNotifyModal'
+import DiscordNotifyModal from '@/components/DiscordNotifyModal'
+import SlackNotifyModal from '@/components/SlackNotifyModal'
 import ResultsQRCode from '@/components/ResultsQRCode'
 import { fetchContractTransactions, isValidContractId, type ContractTransaction } from '@/lib/stellar'
 import { NETWORKS } from '@/types/stellar'
@@ -78,6 +78,13 @@ export default function ResultsClient() {
       return
     }
 
+    const source = sessionStorage.getItem('sg_last_scan_source') ?? sessionStorage.getItem('sg_scan_source')
+    if (source) setScanSource(source)
+
+    const d = sessionStorage.getItem('sg_scan_duration')
+    if (d) setDuration(d)
+  }, [router, searchParams])
+
   useEffect(() => {
     function handleKeyDown(e: KeyboardEvent) {
       if (e.target instanceof HTMLInputElement || e.target instanceof HTMLTextAreaElement) return
@@ -102,7 +109,9 @@ export default function ResultsClient() {
         }
       }
     }
-  }, [router, searchParams])
+    window.addEventListener('keydown', handleKeyDown)
+    return () => window.removeEventListener('keydown', handleKeyDown)
+  }, [findings, navIndex])
 
   useEffect(() => {
     if (findings == null) return
@@ -236,7 +245,7 @@ export default function ResultsClient() {
     )
   }
 
-  const counts: Record<Severity, number> = { Critical: 0, High: 0, Medium: 0, Low: 0 }
+  const counts: Record<Severity, number> = { Critical: 0, High: 0, Medium: 0, Low: 0, Info: 0 }
   for (const finding of findings) counts[finding.severity]++
 
   const q = searchQuery.toLowerCase()
@@ -348,6 +357,30 @@ export default function ResultsClient() {
                 className="rounded-lg border border-[var(--border)] px-3 py-1.5 text-sm text-slate-400 transition hover:text-white"
               >
                 Export to Jira
+              </button>
+            )}
+            {findings.length > 0 && (
+              <button
+                onClick={() => setShowTelegramModal(true)}
+                className="rounded-lg border border-[var(--border)] px-3 py-1.5 text-sm text-slate-400 transition hover:text-white"
+              >
+                Notify Telegram
+              </button>
+            )}
+            {findings.length > 0 && (
+              <button
+                onClick={() => setShowDiscordModal(true)}
+                className="rounded-lg border border-[var(--border)] px-3 py-1.5 text-sm text-slate-400 transition hover:text-white"
+              >
+                Notify Discord
+              </button>
+            )}
+            {findings.length > 0 && (
+              <button
+                onClick={() => setShowSlackModal(true)}
+                className="rounded-lg border border-[var(--border)] px-3 py-1.5 text-sm text-slate-400 transition hover:text-white"
+              >
+                Notify Slack
               </button>
             )}
             {getEmbedToken() && (
@@ -680,6 +713,15 @@ export default function ResultsClient() {
       )}
       {showNotionModal && (
         <NotionExportModal findings={findings} onClose={() => setShowNotionModal(false)} />
+      )}
+      {showTelegramModal && (
+        <TelegramNotifyModal findings={findings} source={scanSource ?? ''} onClose={() => setShowTelegramModal(false)} />
+      )}
+      {showDiscordModal && (
+        <DiscordNotifyModal findings={findings} source={scanSource ?? ''} onClose={() => setShowDiscordModal(false)} />
+      )}
+      {showSlackModal && (
+        <SlackNotifyModal findings={findings} source={scanSource ?? ''} onClose={() => setShowSlackModal(false)} />
       )}
       {showShortcutsModal && (
         <div

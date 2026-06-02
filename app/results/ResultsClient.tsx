@@ -5,6 +5,7 @@ import { useRouter, useSearchParams } from 'next/navigation'
 import type { Finding, Severity } from '@/types/findings'
 import { decodeFindingsParam, encodeWorkspace } from '@/lib/share'
 import { exportEmail } from '@/lib/export'
+import { exportJson, exportCsv, downloadMarkdown } from '@/lib/export'
 import { exportSarif } from '@/lib/sarif'
 import { getAllScanHistory } from '@/lib/history'
 import { diffFindings } from '@/lib/diffFindings'
@@ -328,6 +329,24 @@ export default function ResultsClient() {
               className="rounded-lg border border-[var(--border)] px-3 py-1.5 text-sm text-slate-400 transition hover:text-white"
             >
               Download PDF
+            </button>
+            <button
+              onClick={() => exportJson(findings)}
+              className="rounded-lg border border-[var(--border)] px-3 py-1.5 text-sm text-slate-400 transition hover:text-white"
+            >
+              Download JSON
+            </button>
+            <button
+              onClick={() => exportCsv(findings)}
+              className="rounded-lg border border-[var(--border)] px-3 py-1.5 text-sm text-slate-400 transition hover:text-white"
+            >
+              Download CSV
+            </button>
+            <button
+              onClick={() => downloadMarkdown(findings, { source: scanSource ?? 'Unknown', scannedAt: new Date().toISOString() })}
+              className="rounded-lg border border-[var(--border)] px-3 py-1.5 text-sm text-slate-400 transition hover:text-white"
+            >
+              Download Markdown
             </button>
             {findings.length > 0 && (
               <button
